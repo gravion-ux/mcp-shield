@@ -60,13 +60,24 @@ def write_baseline(path, baseline):
 
 def load_baseline(path):
     try:
-        data = json.loads(Path(path).read_text(encoding="utf-8"))
+        data = json.loads(Path(path).read_text(encoding="utf-8-sig"))
     except OSError as exc:
         raise LoadError("cannot read baseline %s: %s" % (path, exc))
     except json.JSONDecodeError as exc:
         raise LoadError("invalid JSON in baseline %s: %s" % (path, exc))
     if not isinstance(data, dict) or data.get("format") != BASELINE_FORMAT:
         raise LoadError("%s is not an mcp-shield baseline file" % (path,))
+    for section in ("tools", "servers"):
+        entries = data.get(section)
+        if entries is None:
+            continue
+        if not isinstance(entries, dict) or not all(
+            isinstance(v, dict) for v in entries.values()
+        ):
+            raise LoadError(
+                "%s: baseline %r section must map names to objects"
+                % (path, section)
+            )
     return data
 
 
