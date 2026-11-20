@@ -49,3 +49,21 @@ def test_server_change_is_high():
     findings = diff_baseline(baseline, TOOLS, changed_servers)
     assert check_ids(findings) == {"rugpull-server-changed"}
     assert findings[0].severity == "high"
+
+
+def test_load_baseline_rejects_malformed_sections(tmp_path):
+    import json
+
+    import pytest
+
+    from mcp_shield.baseline import load_baseline
+    from mcp_shield.loader import LoadError
+
+    path = tmp_path / "baseline.json"
+    path.write_text(json.dumps({
+        "format": "mcp-shield-baseline/1",
+        "tools": {"some_tool": 5},
+        "servers": {},
+    }), encoding="utf-8")
+    with pytest.raises(LoadError, match="tools"):
+        load_baseline(str(path))
