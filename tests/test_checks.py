@@ -201,3 +201,23 @@ def test_audit_config_combines_checks():
     }
     found = ids(audit_config(servers))
     assert {"shell-command", "secret-in-env"} <= found
+
+
+def test_uvx_python_flag_value_is_not_a_package_spec():
+    findings = check_unpinned_packages(
+        "s", {"command": "uvx", "args": ["--python", "3.12", "ruff@0.5.0"]})
+    assert findings == []
+
+
+def test_docker_env_file_value_is_not_an_image():
+    findings = check_unpinned_packages(
+        "s", {"command": "docker",
+              "args": ["run", "--env-file", "prod.env", "myimg:1.2.3"]})
+    assert findings == []
+
+
+def test_docker_unpinned_image_still_flagged():
+    findings = check_unpinned_packages(
+        "s", {"command": "docker",
+              "args": ["run", "--env-file", "prod.env", "myimg"]})
+    assert [f.check_id for f in findings] == ["unpinned-package"]
