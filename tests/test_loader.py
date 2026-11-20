@@ -44,3 +44,24 @@ def test_load_invalid_json_raises(tmp_path):
 def test_load_missing_file_raises(tmp_path):
     with pytest.raises(LoadError):
         load_tools(str(tmp_path / "nope.json"))
+
+
+def test_load_config_rejects_non_object_server(tmp_path):
+    path = _write(tmp_path, "cfg.json", {
+        "mcpServers": {"good": {"command": "node"}, "bad": "oops-string"},
+    })
+    with pytest.raises(LoadError, match="server 'bad'"):
+        load_config(path)
+
+
+def test_load_tools_rejects_non_object_entry(tmp_path):
+    path = _write(tmp_path, "tools.json", [{"name": "ok_tool"}, 42])
+    with pytest.raises(LoadError, match="tool #1"):
+        load_tools(path)
+
+
+def test_load_config_tolerates_utf8_bom(tmp_path):
+    path = tmp_path / "cfg.json"
+    path.write_bytes(b"\xef\xbb\xbf" + json.dumps(
+        {"mcpServers": {"fs": {"command": "node"}}}).encode("utf-8"))
+    assert load_config(str(path)) == {"fs": {"command": "node"}}
