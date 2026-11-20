@@ -241,15 +241,18 @@ def check_unpinned_packages(name, server):
         for i, arg in enumerate(args):
             if arg == "--from" and i + 1 < len(args):
                 specs.append(args[i + 1])
-        positional = _first_positional(args, value_flags=("--from", "--with", "-w"))
+        positional = _first_positional(
+            args, value_flags=("--from", "--with", "-w", "--python", "-p")
+        )
         if positional:
             specs.append(positional)
         runner = base
     elif base == "docker" and args and args[0] == "run":
         image = _first_positional(
             args[1:],
-            value_flags=("-e", "--env", "-v", "--volume", "-p", "--publish",
-                         "--name", "--network", "--user", "-w", "--workdir"),
+            value_flags=("-e", "--env", "--env-file", "-v", "--volume",
+                         "-p", "--publish", "--name", "--network",
+                         "--user", "-u", "--pull", "-w", "--workdir"),
         )
         if image and not _docker_image_is_pinned(image):
             findings.append(Finding(
