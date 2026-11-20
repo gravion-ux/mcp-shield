@@ -28,7 +28,7 @@ class LoadError(Exception):
 
 def _read_json(path):
     try:
-        text = Path(path).read_text(encoding="utf-8")
+        text = Path(path).read_text(encoding="utf-8-sig")
     except OSError as exc:
         raise LoadError("cannot read %s: %s" % (path, exc))
     try:
@@ -52,7 +52,15 @@ def load_config(path):
         servers = {}
     if not isinstance(servers, dict):
         raise LoadError("%s: 'mcpServers' must be a JSON object" % (path,))
-    return {name: cfg for name, cfg in servers.items() if isinstance(cfg, dict)}
+    for name, cfg in servers.items():
+        if not isinstance(cfg, dict):
+            # Never silently skip a server: an auditor that drops entries
+            # would report a clean bill of health for config it never read.
+            raise LoadError(
+                "%s: server %r must be a JSON object, got %s"
+                % (path, name, type(cfg).__name__)
+            )
+    return dict(servers)
 
 
 def load_tools(path):
@@ -71,4 +79,10 @@ def load_tools(path):
             "%s: expected a JSON list of tools or an object with a 'tools' list"
             % (path,)
         )
-    return [t for t in tools if isinstance(t, dict)]
+    for index, tool in enumerate(tools):
+        if not isinstance(tool, dict):
+            raise LoadError(
+                "%s: tool #%d must be a JSON object, got %s"
+                % (path, index, type(tool).__name__)
+            )
+    return list(tools)
