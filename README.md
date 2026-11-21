@@ -1,5 +1,7 @@
 # mcp-shield
 
+[![codecov](https://codecov.io/gh/gravion-ux/mcp-shield/branch/main/graph/badge.svg)](https://codecov.io/gh/gravion-ux/mcp-shield)
+
 **A defensive security auditor for MCP (Model Context Protocol) servers.**
 
 `mcp-shield` statically audits MCP server configurations and tool definitions
