@@ -195,9 +195,14 @@ def _spec_is_pinned(spec):
         if "@" in rest:
             return rest.split("@", 1)[1] not in ("", "latest")
         return False
-    if "@" in s:
-        return s.split("@", 1)[1] not in ("", "latest")
-    return False
+    # A version pin is an "@" that comes after the last path separator. An "@"
+    # that comes earlier belongs to the URL's userinfo (git+ssh://git@host/...)
+    # and says nothing about the version, so an unpinned git source must not
+    # pass this check.
+    at = s.rfind("@")
+    if at == -1 or s.rfind("/") > at:
+        return False
+    return s[at + 1:] not in ("", "latest")
 
 
 def _first_positional(args, value_flags=()):
@@ -235,22 +240,37 @@ def check_unpinned_packages(name, server):
     specs = []
 
     if base in ("npx", "bunx"):
+        package_flag = False
         for i, arg in enumerate(args):
             if arg in ("-p", "--package") and i + 1 < len(args):
                 specs.append(args[i + 1])
-        positional = _first_positional(args, value_flags=("-p", "--package"))
-        if positional:
-            specs.append(positional)
+                package_flag = True
+            elif arg.startswith("--package=") and len(arg) > len("--package="):
+                specs.append(arg[len("--package="):])
+                package_flag = True
+        if not package_flag:
+            # Without -p/--package the first positional is the package itself.
+            # With it, the first positional is the command that gets run, so
+            # treating it as a package would report a pinned package as
+            # unpinned.
+            positional = _first_positional(args, value_flags=("-p", "--package"))
+            if positional:
+                specs.append(positional)
         runner = base
     elif base == "uvx":
+        from_flag = False
         for i, arg in enumerate(args):
             if arg == "--from" and i + 1 < len(args):
                 specs.append(args[i + 1])
-        positional = _first_positional(
-            args, value_flags=("--from", "--with", "-w", "--python", "-p")
-        )
-        if positional:
-            specs.append(positional)
+                from_flag = True
+        if not from_flag:
+            # --from names the package to install; the positional is the
+            # command that gets run.
+            positional = _first_positional(
+                args, value_flags=("--from", "--with", "-w", "--python", "-p")
+            )
+            if positional:
+                specs.append(positional)
         runner = base
     elif base == "docker" and args and args[0] == "run":
         image = _first_positional(
