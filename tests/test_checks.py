@@ -72,6 +72,36 @@ def test_env_reference_and_placeholder_are_ok():
     assert check_secrets_in_env("s", server) == []
 
 
+def test_stripe_live_key_is_critical():
+    server = {"env": {"STRIPE_KEY": "sk_live_FAKEFAKEFAKEFAKEFAKEFAKE"}}
+    findings = check_secrets_in_env("s", server)
+    assert severities(findings, "secret-in-env") == {"critical"}
+
+
+def test_stripe_restricted_key_is_critical():
+    server = {"env": {"STRIPE_KEY": "rk_live_FAKEFAKEFAKEFAKEFAKEFAKE"}}
+    findings = check_secrets_in_env("s", server)
+    assert severities(findings, "secret-in-env") == {"critical"}
+
+
+def test_gitlab_token_is_critical():
+    server = {"env": {"GITLAB_TOKEN": "glpat-FAKEFAKEFAKEFAKEFAKE1"}}
+    findings = check_secrets_in_env("s", server)
+    assert severities(findings, "secret-in-env") == {"critical"}
+
+
+def test_npm_token_is_critical():
+    server = {"env": {"NPM_TOKEN": "npm_FAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE"}}
+    findings = check_secrets_in_env("s", server)
+    assert severities(findings, "secret-in-env") == {"critical"}
+
+
+def test_pypi_token_is_critical():
+    server = {"env": {"PYPI_TOKEN": "pypi-FAKEFAKEFAKEFAKEFAKEFAKE"}}
+    findings = check_secrets_in_env("s", server)
+    assert severities(findings, "secret-in-env") == {"critical"}
+
+
 # --- unpinned packages ------------------------------------------------------
 
 def test_npx_unpinned_flagged():
