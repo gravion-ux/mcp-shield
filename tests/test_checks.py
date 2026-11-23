@@ -1,6 +1,7 @@
 """Tests for every check family in mcp_shield.checks."""
 
 from mcp_shield.checks import (
+    _spec_is_pinned,
     audit_config,
     audit_tools,
     check_broad_paths,
@@ -70,6 +71,36 @@ def test_env_reference_and_placeholder_are_ok():
         "PLAIN_SETTING": "not-a-secret-value",
     }}
     assert check_secrets_in_env("s", server) == []
+
+
+def test_stripe_live_key_is_critical():
+    server = {"env": {"STRIPE_KEY": "sk_live_FAKEFAKEFAKEFAKEFAKEFAKE"}}
+    findings = check_secrets_in_env("s", server)
+    assert severities(findings, "secret-in-env") == {"critical"}
+
+
+def test_stripe_restricted_key_is_critical():
+    server = {"env": {"STRIPE_KEY": "rk_live_FAKEFAKEFAKEFAKEFAKEFAKE"}}
+    findings = check_secrets_in_env("s", server)
+    assert severities(findings, "secret-in-env") == {"critical"}
+
+
+def test_gitlab_token_is_critical():
+    server = {"env": {"GITLAB_TOKEN": "glpat-FAKEFAKEFAKEFAKEFAKE1"}}
+    findings = check_secrets_in_env("s", server)
+    assert severities(findings, "secret-in-env") == {"critical"}
+
+
+def test_npm_token_is_critical():
+    server = {"env": {"NPM_TOKEN": "npm_FAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE"}}
+    findings = check_secrets_in_env("s", server)
+    assert severities(findings, "secret-in-env") == {"critical"}
+
+
+def test_pypi_token_is_critical():
+    server = {"env": {"PYPI_TOKEN": "pypi-FAKEFAKEFAKEFAKEFAKEFAKE"}}
+    findings = check_secrets_in_env("s", server)
+    assert severities(findings, "secret-in-env") == {"critical"}
 
 
 # --- unpinned packages ------------------------------------------------------
@@ -221,3 +252,51 @@ def test_docker_unpinned_image_still_flagged():
         "s", {"command": "docker",
               "args": ["run", "--env-file", "prod.env", "myimg"]})
     assert [f.check_id for f in findings] == ["unpinned-package"]
+
+
+def test_npx_package_flag_is_not_mistaken_for_the_command():
+    """With -p, the positional is the command that gets run, not a package."""
+    findings = check_unpinned_packages(
+        "s", {"command": "npx",
+              "args": ["-p", "@scope/tool@1.2.3", "run-the-tool"]})
+    assert findings == []
+
+
+def test_npx_package_flag_equals_form_is_not_mistaken_for_the_command():
+    findings = check_unpinned_packages(
+        "s", {"command": "npx",
+              "args": ["--package=@scope/tool@1.2.3", "run-the-tool"]})
+    assert findings == []
+
+
+def test_npx_package_flag_with_an_unpinned_package_is_flagged():
+    findings = check_unpinned_packages(
+        "s", {"command": "npx", "args": ["-p", "@scope/tool", "run-the-tool"]})
+    assert ids(findings) == {"unpinned-package"}
+
+
+def test_uvx_from_flag_is_not_mistaken_for_the_command():
+    """With --from, the positional is the command that gets run."""
+    findings = check_unpinned_packages(
+        "s", {"command": "uvx", "args": ["--from", "pkg@1.2.3", "tool"]})
+    assert findings == []
+
+
+def test_uvx_from_flag_with_an_unpinned_package_is_flagged():
+    findings = check_unpinned_packages(
+        "s", {"command": "uvx", "args": ["--from", "pkg", "tool"]})
+    assert ids(findings) == {"unpinned-package"}
+
+
+def test_spec_is_pinned_ignores_url_userinfo():
+    """An "@" in the userinfo of a git URL is not a version pin."""
+    assert _spec_is_pinned("git+ssh://git@github.com/org/repo.git") is False
+    assert _spec_is_pinned("git+https://github.com/org/repo.git") is False
+    assert _spec_is_pinned("git+ssh://git@github.com/org/repo.git@v1.0.0") is True
+
+
+def test_spec_is_pinned_still_accepts_npm_specs():
+    assert _spec_is_pinned("some-server@1.2.3") is True
+    assert _spec_is_pinned("@scope/name@1.2.3") is True
+    assert _spec_is_pinned("some-server@latest") is False
+    assert _spec_is_pinned("some-server") is False
