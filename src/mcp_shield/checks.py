@@ -44,6 +44,11 @@ SECRET_VALUE_PATTERNS = [
     (re.compile(r"xox[baprs]-[A-Za-z0-9-]{10,}"), "Slack token (xox...)"),
     (re.compile(r"AIza[0-9A-Za-z_-]{20,}"), "Google API key (AIza...)"),
     (re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"), "PEM private key"),
+    (re.compile(r"sk_live_[A-Za-z0-9]{16,}"), "Stripe live secret key (sk_live_...)"),
+    (re.compile(r"rk_live_[A-Za-z0-9]{16,}"), "Stripe restricted key (rk_live_...)"),
+    (re.compile(r"glpat-[A-Za-z0-9_-]{20,}"), "GitLab personal access token (glpat-...)"),
+    (re.compile(r"npm_[A-Za-z0-9]{36}"), "npm token (npm_...)"),
+    (re.compile(r"pypi-[A-Za-z0-9_-]{20,}"), "PyPI token (pypi-...)"),
 ]
 
 
