@@ -42,7 +42,7 @@ the server. That creates a distinctive threat surface:
 pip install -e .        # from a clone of this repo
 ```
 
-Requires Python 3.9+. No third-party packages.
+Requires Python 3.10+. No third-party packages.
 
 ## Usage
 
